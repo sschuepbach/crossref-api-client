@@ -1,55 +1,81 @@
 package io.annotat
 
-import java.net.URLEncoder
+import org.json4s.native.JsonMethods._
 
 import scalaj.http._
 
 
-class Works extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/works"
-  override def apply = new BaseSearchType(baseUrl) with Queriable
-  override def apply(onWorks: Boolean) = apply
+class Works(conn: AbstractConnector) extends CrossrefRequest {
+  val baseUrl: String = conn.baseUrl + "/works"
 }
 
-object Funders extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/funders"
+case object Works extends Routable with Queriable
+case object Funders extends Routable
+case object Members extends Routable
+case object Types extends Routable
+case object Licenses extends Routable
+case object Journals extends Routable
+
+class Works() extends Routable
+
+object Works {
+  def apply(conn: AbstractConnector) = new Works(conn) with Queriable
 }
 
-object Members extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/members"
+class Funders(conn: AbstractConnector) extends CrossrefRequest {
+  val baseUrl: String = "http://api.crossref.org/funders"
+
 }
 
-object Types extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/types"
+object Funders {
+
 }
 
-object Licenses extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/licenses"
+class Members(conn: AbstractConnector) extends CrossrefRequest {
+  val baseUrl: String = "http://api.crossref.org/members"
 }
 
-object Journals extends BaseRequest {
-  override val baseUrl: String = super.baseUrl + "/journals"
+object Members {
+
+}
+
+class Types(conn: AbstractConnector) extends CrossrefRequest {
+  val baseUrl: String = conn.baseUrl + "/types"
+}
+
+object Types {
+
 }
 
 
-sealed class BaseSearchType(url: String) {
 
-  type Param = (String, String)
-
-  val baseUrl: String = "http://api.crossref.org/"
-
-  val get: HttpRequest = {
-    val req = Http(baseUrl)
-
-  }
-
-  def get(params: Seq[(String, String)]): HttpRequest = get.params(params)
+class Licenses(conn: AbstractConnector) extends CrossrefRequest {
+  val baseUrl: String = conn.baseUrl + "/licenses"
 }
 
-trait BaseRequest extends Filterable with Sortable with Facetable {
-
-  val baseUrl: String = "http://api.crossref.org"
-  def apply: BaseSearchType = new BaseSearchType(baseUrl)
-  def apply(onWorks: Boolean): BaseSearchType = if (onWorks) new BaseSearchType(baseUrl) with Queriable else new BaseSearchType(baseUrl)
+object Licenses {
+  def apply(conn: AbstractConnector): Licenses = new Licenses(conn)
+  def apply(conn: AbstractConnector, onWorks: Boolean): Licenses = if (onWorks) new Licenses(conn) with Queriable else apply(conn)
 }
 
+class Journals(conn: AbstractConnector) extends Route {
+  val baseUrl: String = conn.baseUrl + "/journals"
+}
+
+object Journals {
+  def apply(conn: AbstractConnector): Journals = new Journals(conn)
+  def apply(conn: AbstractConnector, onWorks: Boolean): Journals = if (onWorks) new Journals(conn) with Queriable else apply(conn)
+  val response: HttpResponse[Map[String,String]] = Http("http://foo.com").execute(parser = {inputStream =>
+    parse(inputStream)
+  })
+}
+
+sealed class BaseSearchType(url: String)
+
+trait CrossrefRequest extends Filterable with Sortable with Facetable {
+  def get: HttpRequest = Http(baseUrl).params(paramCache)
+}
+
+trait Routable extends Filterable with Facetable with Sortable
+
+class Router(get: Unit => String)
